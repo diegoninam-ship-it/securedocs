@@ -1,0 +1,18 @@
+# Python / backend
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+backend/.env
+
+# Frontend (cuando lo creemos en el Paso 9)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Vercel
+.vercel/
+
+# Editor / SO
+.vscode/
+.DS_Store
