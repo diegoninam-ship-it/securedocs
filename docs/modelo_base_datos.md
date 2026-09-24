@@ -1,0 +1,88 @@
+# Modelo de base de datos — SecureDocs
+
+PostgreSQL gestionado en Neon. 8 entidades — coincide con el mínimo del enunciado (Usuario, Rol, Permiso, RolPermiso, Documento, Departamento, Politica, Auditoria). Detalle completo (tipos exactos, reglas de negocio) en `CONTEXT.md` sección 7.
+
+```mermaid
+erDiagram
+    ROLES ||--o{ ROL_PERMISO : tiene
+    PERMISOS ||--o{ ROL_PERMISO : otorga
+    ROLES ||--o{ USUARIOS : asigna
+    DEPARTAMENTOS ||--o{ USUARIOS : agrupa
+    DEPARTAMENTOS ||--o{ DOCUMENTOS : pertenece
+    USUARIOS ||--o{ DOCUMENTOS : "es propietario de"
+    USUARIOS ||--o{ DOCUMENTOS : "aprueba (nulo)"
+    USUARIOS ||--o{ AUDITORIA : genera
+
+    ROLES {
+        int id PK
+        string codigo
+        string nombre
+    }
+    PERMISOS {
+        int id PK
+        string codigo
+        string descripcion
+    }
+    ROL_PERMISO {
+        int rol_id FK "PK compuesta"
+        int permiso_id FK "PK compuesta"
+    }
+    DEPARTAMENTOS {
+        int id PK
+        string codigo
+        string nombre
+    }
+    USUARIOS {
+        int id PK
+        string nombre
+        string correo
+        string password_hash
+        int rol_id FK
+        int departamento_id FK "nulo si invitado"
+        int nivel_seguridad
+        string pais
+        string tipo_contrato
+        string estado
+        int token_version
+    }
+    DOCUMENTOS {
+        int id PK
+        string titulo
+        string descripcion
+        int propietario_id FK
+        int departamento_id FK
+        int nivel_confidencialidad
+        string estado
+        string pais
+        datetime fecha_creacion
+        int aprobado_por FK "nulo"
+        datetime fecha_aprobacion
+    }
+    POLITICAS {
+        int id PK
+        string codigo "P1-P9"
+        string nombre
+        string descripcion
+        bool activa
+        json roles_aplicables "null=todos"
+        json roles_exentos
+        json operaciones
+        json parametros
+    }
+    AUDITORIA {
+        int id PK
+        int usuario_id FK "nulo"
+        string usuario_correo "snapshot"
+        string recurso
+        string accion
+        datetime fecha
+        string resultado "PERMITIDO/DENEGADO"
+        string etapa "AUTH/RBAC/ABAC"
+        string motivo
+        string politica_fallida "ej. P8,P2"
+    }
+```
+
+`politicas` no tiene llave foránea hacia otras tablas — se referencia por código (`P1`–`P9`) desde el motor de autorización (`backend/app/authz/abac/engine.py`), no por relación de base de datos.
+
+> Fuente editable: [`modelo_base_datos.mmd`](modelo_base_datos.mmd) (abrir en [Mermaid Live](https://mermaid.live) para editar). Versión estática: [`modelo_base_datos.png`](modelo_base_datos.png).

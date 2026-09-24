@@ -3,6 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import ExpiredSignatureError, InvalidTokenError
 from sqlalchemy.orm import Session
 
+from app.audit.service import registrar
 from app.auth.security import decodificar_token
 from app.authz.abac.engine import evaluar_abac
 from app.authz.context import Contexto, Sujeto, construir_entorno
@@ -47,6 +48,10 @@ def get_current_user(
 
     resultado = evaluar_abac(db, ctx)
     if not resultado.permitido:
+        registrar(
+            db, ctx, request.url.path, "DENEGADO",
+            etapa="ABAC", motivo=resultado.motivo, politica_fallida=",".join(resultado.politicas_fallidas),
+        )
         raise HTTPException(status.HTTP_403_FORBIDDEN, resultado.motivo)
 
     request.state.contexto_base = ctx  # reutilizado en autorizar() — Paso 7.4

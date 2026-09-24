@@ -22,7 +22,7 @@
 | Backend | Python 3.11+ · FastAPI · SQLAlchemy · Alembic · PyJWT · bcrypt · pydantic-settings |
 | Base de datos | PostgreSQL gestionado en **Neon** (proyecto `securedocs`, región AWS US East 2 / Ohio) |
 | Frontend | React 19 + Vite + TypeScript |
-| Despliegue | Vercel, proyecto único: frontend estático + FastAPI como Vercel Function en `api/index.py` (config en `vercel.json`, ver sección 14) |
+| Despliegue | **Vercel — en producción**: https://securedocs-ruby.vercel.app (frontend estático + FastAPI como Vercel Function en `api/index.py`, config en `vercel.json`, ver sección 14) |
 
 ---
 
@@ -33,7 +33,7 @@
 | 1 | Planificación | ✅ Cerrada |
 | 2 | Desarrollo | ✅ Backend y Frontend implementados |
 | 3 | Testing (backend + frontend integrados) | 🟡 Manual (Fases 1–4) ✅ 2026-09-24 · Automatizado (Fase 0, pytest) ⏳ pospuesto |
-| 4 | Despliegue en Vercel (opcional) | 🟡 Configuración lista (sección 14) · falta el despliegue real (requiere cuenta/CLI de Vercel del usuario) |
+| 4 | Despliegue en Vercel (opcional) | ✅ Desplegado y verificado 2026-09-24 — https://securedocs-ruby.vercel.app |
 
 > **Actualización 2026-09-23:** la etapa de *Testing* formal, originalmente eliminada del plan (los 17 casos de la sección 10 se habían verificado de forma ad hoc contra el backend durante Desarrollo), se **reincorpora** ahora que existe frontend. Motivo: verificar que backend + frontend integrados siguen operativos end-to-end, sin regresiones. Ver el plan detallado en la sección 13.
 
@@ -49,10 +49,11 @@
 - **Testing manual de la etapa 3 ejecutado y aprobado (2026-09-24)**: Fases 1–4 de la sección 13 completas — 21/21 casos de regresión de backend, 6/6 roles verificados end-to-end en el frontend, 6/6 casos límite de integración, regresión de los 9 bugs conocidos sin reproducirse. Fase 0 (pytest, unitarias e integradas) **pospuesta** a pedido explícito del usuario — sigue pendiente.
 - Bug #9 (sección 12) corregido en la sesión anterior: `GET /documentos` devolvía 500 — confirmado sin regresión.
 - **Bug #10 encontrado y corregido durante el testing manual**: el mensaje de error dentro de un modal (ej. 409 por correo duplicado) quedaba oculto detrás del overlay del modal. Corregido en `DocumentoFormModal.tsx`, `UsuarioFormModal.tsx`, `DocumentosPage.tsx`, `UsuariosPage.tsx`.
-- **Despliegue en Vercel retomado**: se creó `api/index.py` (wrapper ASGI que recorta el prefijo `/api`), `vercel.json` (build del frontend + rewrites) y `.python-version`, y se corrigió `requirements.txt` (estaba en **UTF-16**, bug #11, un bug que habría roto el build de Vercel — ahora en UTF-8 plano). Verificado localmente: el wrapper responde correctamente contra la Neon real (`/api/health`, `/api/auth/login`) y `npm run build` del frontend genera `frontend/dist` sin errores. Decisiones tomadas con el usuario: `DEMO_MODE=true` en producción, misma BD de Neon de desarrollo, `JWT_SECRET` nuevo generado para producción (no versionado, ver sección 14).
-- **Dos intentos reales de deploy en Vercel fallaron y se corrigieron en el momento** (2026-09-24): (1) bug #12 — `runtime` inválido en `vercel.json`, reemplazado por `.python-version`; (2) bug #13 — `.python-version` pedía Python `3.11`, no disponible en la imagen de build de Vercel (`uv` no lo tiene como instalación gestionada), cambiado a `3.12`. **Falta reintentar el deploy** con este segundo fix aplicado (requiere que el usuario haga commit/push y vuelva a desplegar desde el dashboard).
-- **Siguiente tarea:** el usuario debe hacer commit + push del fix del bug #13 y reintentar el deploy en Vercel (sección 14). Después: ejecutar la Fase 0 (pytest) cuando el usuario lo pida.
-- **Atención:** la base de datos quedó "sucia" tras el testing manual de esta sesión (aprobación/eliminación de documentos, cambios de estado de usuarios). Se ejecutó `python -m app.seed` al finalizar, por lo que queda limpia — no hace falta resembrar antes de la próxima tarea, pero verificar si se reabren pruebas.
+- **✅ Desplegado en Vercel y verificado (2026-09-24): https://securedocs-ruby.vercel.app**. Se creó `api/index.py` (wrapper ASGI que recorta el prefijo `/api`), `vercel.json` (build del frontend + rewrites) y `.python-version` (`3.12`), y se corrigió `requirements.txt` (estaba en UTF-16, bug #11). Costó 5 intentos hasta quedar arriba — bugs #12–#15 (sección 12): `runtime` inválido en `vercel.json`, Python 3.11 no disponible en la imagen de build, `JWT_SECRET` faltante en las env vars de Vercel, y `DATABASE_URL_POOLED`/`_UNPOOLED` pegadas con comillas dobles literales (arrastradas del formato de `.env`) que rompían el parseo de SQLAlchemy. Verificado end-to-end en producción: `/api/health`, login, `/auth/me`, `/documentos` (filtrado ABAC funcionando), sitio estático y fallback de SPA en rutas como `/documentos`.
+- **Entregables del laboratorio generados (2026-09-24)**, según sección 17 del enunciado (`GLAB-S06-JFARFAN-2026-02.docx`): `README.md` (nuevo, con badges e instrucciones de instalación), `docs/diagrama_arquitectura.md`/`.mmd`/`.png` y `docs/modelo_base_datos.md`/`.mmd`/`.png` (diagramas Mermaid, renderizados con `@mermaid-js/mermaid-cli`), `docs/matriz_rbac.md`, `docs/matriz_abac.md`, `docs/evidencias_casos_prueba.md` (17 casos con petición/respuesta HTTP real de producción + capturas embebidas en `docs/screenshots/`), `docs/registro_auditoria.md` (26 registros reales de auditoría). Video (#10) queda a cargo del usuario.
+- **Bug nuevo encontrado y corregido durante la preparación de evidencias**: P7 (estado del usuario) no se auditaba cuando fallaba en una petición normal (solo en login) — corregido en `backend/app/auth/dependencies.py`, verificado localmente, **pendiente que el usuario haga push** para que se refleje en producción.
+- **Siguiente tarea:** el usuario debe hacer commit + push de todo lo de esta sesión (README, docs/, fix de auditoría). Pendientes opcionales: ejecutar la Fase 0 (pytest) cuando el usuario lo pida.
+- **Atención:** la base de datos de Neon es la **misma para desarrollo y producción** (decisión tomada con el usuario, sección 14) — cualquier prueba que modifique datos (aprobar/eliminar documentos, cambiar estados de usuario) en producción también afecta el entorno local, y viceversa. Ejecutar `python -m app.seed` la deja limpia en ambos lados.
 
 ---
 
@@ -445,6 +446,8 @@ El frontend solo recibe `rol` en `/auth/me`. Ocultar botones según rol es **sol
 | 11 | `requirements.txt` (raíz) estaba en **UTF-16 LE** en vez de UTF-8 (detectado al retomar el despliegue en Vercel) | `pip freeze > ..\requirements.txt` en PowerShell escribe UTF-16 por defecto (`>` usa la codificación por defecto de `Out-File`). Vercel/pip esperan UTF-8; el build habría fallado | Reescrito en UTF-8 plano. **Regla nueva:** nunca uses `pip freeze > archivo` en PowerShell; usa `pip freeze \| Out-File -Encoding utf8 archivo` (ver sección 5) |
 | 12 | Build de Vercel fallaba con `Error: Function Runtimes must have a valid version, for example now-php@1.0.0` (primer intento real de deploy, 2026-09-24) | `vercel.json` tenía `"functions": { "api/index.py": { "runtime": "python3.11" } }`; el campo `runtime` espera un identificador de paquete de Vercel con versión (`nombre@version`), no un nombre de lenguaje suelto | Se quitó el bloque `functions` de `vercel.json`; se agregó `.python-version` (raíz, contenido `3.11`) — es la forma soportada por Vercel para fijar la versión de Python sin ese campo |
 | 13 | Con el fix del bug #12 aplicado, el build seguía fallando: `uv sync ... error: No interpreter found for Python 3.11 in managed installations` (segundo intento real de deploy, 2026-09-24) | La imagen de build de Vercel no tiene Python 3.11 entre las instalaciones gestionadas por `uv`; el propio log avisaba "Using python version: 3.12" como fallback, pero `uv sync --locked` igual intentaba resolver la versión pedida en `.python-version` (3.11) y fallaba por la inconsistencia | `.python-version` cambiado de `3.11` a `3.12` — la versión que Vercel sí tiene disponible (confirmado en el log del intento anterior) |
+| 14 | Build pasó pero la function crasheaba en runtime: `pydantic_core.ValidationError: 1 validation error for Settings — jwt_secret Field required` (`/api/health` → 500 `FUNCTION_INVOCATION_FAILED`) | Al configurar las variables de entorno en Vercel, quedó sin cargar `JWT_SECRET` (las otras 5 sí estaban) | Se agregó `JWT_SECRET` en Settings → Environment Variables (Production) y se redesplegó — las env vars nuevas no aplican a un deployment ya construido, hace falta un redeploy |
+| 15 | Con `JWT_SECRET` cargado, seguía fallando: `sqlalchemy.exc.ArgumentError: Could not parse SQLAlchemy URL from given URL string` al crear el engine | `backend/.env` local tiene `DATABASE_URL_POOLED`/`DATABASE_URL_UNPOOLED` envueltas en **comillas dobles literales** (`DATABASE_URL_POOLED="postgresql://..."`) — `python-dotenv` las quita al parsear el `.env`, pero al copiar/pegar ese mismo texto (con comillas) en el campo de Vercel, éste lo toma literal: la variable terminaba siendo `"postgresql://...` con la comilla como parte del string | Se corrigieron los valores en Vercel quitando las comillas de apertura/cierre — deben empezar directo en `postgresql://`. **Cuidado al copiar valores desde `.env` a cualquier UI que no sea `.env`/dotenv**: ese formato de comillas es específico de archivos `.env` |
 
 ---
 
@@ -570,6 +573,14 @@ Repasar la tabla de bugs (sección 12, #1–#9) uno por uno y confirmar que ning
 
 ## 14. Despliegue en Vercel
 
+**Estado: ✅ desplegado y verificado (2026-09-24).**
+
+| Campo | Valor |
+|---|---|
+| URL de producción | https://securedocs-ruby.vercel.app |
+| Proyecto Vercel | `securedocs` (cuenta personal del usuario, plan Hobby) |
+| Verificado | `/api/health` → 200, login + `/auth/me` + `/documentos` end-to-end contra la Neon real, sitio estático y fallback SPA en rutas internas |
+
 ### Arquitectura
 
 Un único proyecto de Vercel sirve dos cosas:
@@ -612,26 +623,27 @@ No hace falta `CORSMiddleware`: frontend y API quedan bajo el mismo dominio de V
 - `npm run build` en `frontend/` genera `frontend/dist` sin errores (`tsc -b && vite build`).
 - `requirements.txt` corregido a UTF-8 (bug #11).
 
-### Pendiente — pasos para el usuario (requiere su cuenta de Vercel)
+### Pasos que se siguieron (vía dashboard, sin CLI)
 
-No hay CLI de Vercel instalada ni sesión iniciada en esta máquina; desplegar requiere credenciales del usuario. Pasos vía dashboard (sin instalar nada):
-
-1. En [vercel.com](https://vercel.com), **Add New → Project** → importar el repo `diegoninam-ship-it/securedocs` desde GitHub.
-2. **Root Directory:** dejar como raíz del repo (`.`) — **no** apuntar a `frontend/`, porque `vercel.json` y `api/` están en la raíz.
-3. **Framework Preset:** "Other" (ya lo fuerza `"framework": null` en `vercel.json`).
-4. **Environment Variables** (Production), mismos nombres que `backend/.env.example`:
-   - `DATABASE_URL_POOLED` → la misma de `backend/.env`
-   - `DATABASE_URL_UNPOOLED` → la misma de `backend/.env` (solo la usa Alembic, pero `Settings` la exige al arrancar)
-   - `JWT_SECRET` → el nuevo generado para producción (no lo escribas en el repo)
-   - `JWT_EXPIRE_MINUTES` → `30`
-   - `DEMO_MODE` → `true`
-   - `TZ_APP` → `America/Lima`
+1. [vercel.com](https://vercel.com) → **Add New → Project** → importar `diegoninam-ship-it/securedocs` desde GitHub.
+2. **Root Directory:** raíz del repo (`.`), no `frontend/`.
+3. **Framework Preset:** "Other" (`"framework": null` en `vercel.json` lo fuerza igual).
+4. **Environment Variables** (Production), mismos nombres que `backend/.env.example`: `DATABASE_URL_POOLED`, `DATABASE_URL_UNPOOLED`, `JWT_SECRET`, `JWT_EXPIRE_MINUTES`, `DEMO_MODE`, `TZ_APP`.
 5. **Deploy.**
-6. Verificar: `https://<proyecto>.vercel.app/api/health` debe responder `{"status":"ok","demo_mode":true}`, y el sitio raíz debe mostrar el login.
 
-> Alternativa por CLI (`npm i -g vercel`, `vercel login`, `vercel link`, `vercel env add ...` por cada variable, `vercel --prod`) si el usuario prefiere no usar el dashboard — mismos valores de variables.
+### ⚠️ Errores encontrados en el primer despliegue real (léelo antes de repetir este proceso en otro proyecto)
 
-Al completar el despliegue: actualizar el **Estado actual** (sección 3), marcar la etapa 4 como cerrada (sección 2) y agregar la URL de producción a este documento (sección 1).
+El primer intento tomó 5 rondas de fix hasta quedar arriba — documentados como bugs #11–#15 (sección 12). En orden:
+
+1. **`requirements.txt` en UTF-16`** (bug #11) — nunca uses `pip freeze > archivo` en PowerShell.
+2. **`runtime` inválido en `vercel.json`** (bug #12) — no uses `"functions": {"api/index.py": {"runtime": "python3.11"}}`; usa un archivo `.python-version` en la raíz.
+3. **Versión de Python no disponible** (bug #13) — verifica en el log de build qué versión ofrece Vercel como fallback antes de fijarla en `.python-version`.
+4. **Variable de entorno faltante** (bug #14) — al copiar la lista de variables a mano es fácil que se quede una fuera; el error solo aparece en **Logs** (pestaña separada de "Deployment"), no en el build.
+5. **Valores de conexión con comillas literales** (bug #15) — **nunca copies un valor directo de un archivo `.env` a la UI de Vercel si está envuelto en comillas dobles**; pégalo sin ellas.
+
+**Lección general:** un build exitoso (`Ready`) no garantiza que la app funcione — los errores #14 y #15 solo se manifestaron en runtime, al invocar la function, y solo son visibles en la pestaña **Logs** del deployment (no en **Build Logs**). Siempre probar `/api/health` después de un deploy "exitoso".
+
+Al completar el despliegue: actualizar el **Estado actual** (sección 3) — ✅ hecho —, marcar la etapa 4 como cerrada (sección 2) — ✅ hecho — y agregar la URL de producción a este documento (sección 1) — ✅ hecho.
 
 ---
 
@@ -652,5 +664,9 @@ Al completar el despliegue: actualizar el **Estado actual** (sección 3), marcar
 | 2026-09-24 | **Despliegue en Vercel retomado.** Se crea `api/index.py` (wrapper ASGI que recorta el prefijo `/api` y delega en `backend/app/main.py`) y `vercel.json` (build del frontend + rewrites) — nueva **sección 14**. Se detecta y corrige **bug #11**: `requirements.txt` estaba en UTF-16 (por `pip freeze >` en PowerShell), lo que habría roto el build; reescrito en UTF-8 y actualizada la regla operativa de la sección 5. Decisiones consultadas con el usuario: `DEMO_MODE=true` en producción, misma Neon de desarrollo, `JWT_SECRET` nuevo para producción (generado, no versionado). Verificado localmente con `httpx.ASGITransport` contra la Neon real y `npm run build` del frontend. Pasos de deploy vía dashboard entregados al usuario. |
 | 2026-09-24 | **Primer intento real de deploy falló** (ejecutado por el usuario desde el dashboard de Vercel): `Error: Function Runtimes must have a valid version, for example now-php@1.0.0`. Causa: bug #12 (sección 12) — el campo `"functions": {"api/index.py": {"runtime": "python3.11"}}` de `vercel.json` usaba un formato inválido (`runtime` espera `paquete@version`, no un nombre de lenguaje suelto). Corregido: se quitó ese bloque de `vercel.json` y se agregó `.python-version` (raíz, contenido `3.11`) como forma soportada de fijar la versión. Pendiente: el usuario debe hacer commit/push y reintentar el deploy. |
 | 2026-09-24 | **Segundo intento real de deploy falló** (commit `816ceeb`, con el fix del bug #12 ya aplicado): `uv sync ... error: No interpreter found for Python 3.11 in managed installations`. El frontend build (npm + vite) pasó sin problemas; solo falló la function Python. Causa: bug #13 (sección 12) — la imagen de build de Vercel no tenía Python 3.11 disponible para `uv`; el log de esta misma corrida indicaba que usaría 3.12 como fallback. Corregido: `.python-version` cambiado de `3.11` a `3.12`. Pendiente: el usuario debe hacer commit/push y reintentar el deploy una vez más. |
+| 2026-09-24 | **Build pasó, pero la function crasheaba en runtime** (bug #14): `/api/health` devolvía 500 `FUNCTION_INVOCATION_FAILED`; el log de la pestaña **Logs** (no Build Logs) mostró `pydantic_core.ValidationError: jwt_secret Field required` — faltaba esa variable de entorno en Vercel. El usuario la agregó y redesplegó. |
+| 2026-09-24 | **Seguía fallando tras agregar `JWT_SECRET`** (bug #15): `sqlalchemy.exc.ArgumentError: Could not parse SQLAlchemy URL`. Causa: `DATABASE_URL_POOLED`/`DATABASE_URL_UNPOOLED` se pegaron en Vercel con las comillas dobles literales que tienen en `backend/.env` (formato válido para `.env`/`python-dotenv`, pero Vercel las toma como parte literal del valor). El usuario corrigió los valores sin comillas y redesplegó. |
+| 2026-09-24 | **✅ Despliegue exitoso y verificado**: https://securedocs-ruby.vercel.app. Verificado end-to-end: `/api/health` (200), login + `/auth/me` + `/documentos` (filtrado ABAC funcionando) contra la Neon real, sitio estático y fallback de SPA. Etapa 4 (sección 2) cerrada. Sección 14 actualizada con la URL final y una guía de los 5 errores encontrados (bugs #11–#15) para no repetirlos en futuros despliegues. |
+| 2026-09-24 | **Entregables del laboratorio (sección 17 del enunciado) generados**: `README.md` nuevo (badges, instrucciones de instalación, diseño visual), `docs/diagrama_arquitectura.*` y `docs/modelo_base_datos.*` (diagramas Mermaid nativos + PNG exportado con `mermaid-cli`), `docs/matriz_rbac.md`, `docs/matriz_abac.md`, `docs/evidencias_casos_prueba.md` (17 casos con evidencia HTTP real de producción + 15 capturas embebidas en `docs/screenshots/`, generadas con un script Playwright temporal), `docs/registro_auditoria.md` (26 registros reales). Se detectó y corrigió un bug nuevo: P7 no se auditaba en peticiones normales (solo en login) — fix en `backend/app/auth/dependencies.py`, pendiente de push. |
 
 > **Formato para nuevas entradas:** `| AAAA-MM-DD | Qué cambió, en qué archivos, y por qué |`. Si el cambio altera una decisión de la sección 6, actualizar también esa tabla.
