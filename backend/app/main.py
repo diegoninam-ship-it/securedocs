@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import auth
+from app.routers import auditoria, auth, documentos, usuarios
 
 app = FastAPI(title="SecureDocs API")
 
 app.include_router(auth.router)
-
+app.include_router(documentos.router)
+app.include_router(usuarios.router)
+app.include_router(auditoria.router)
 
 @app.get("/health")
 def health():

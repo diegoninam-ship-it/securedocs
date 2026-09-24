@@ -11,26 +11,25 @@ from app.db import get_db
 from app.models import Usuario
 
 
-def autorizar(permiso_rbac: str, recurso_nombre: str = "documento"):
+def autorizar(permiso_rbac: str, accion_abac: str, recurso_nombre: str = "documento"):
     def dependencia(
         request: Request,
         usuario: Usuario = Depends(get_current_user),
         db: Session = Depends(get_db),
     ):
-        ctx_base = request.state.contexto_base  # armado en get_current_user
+        ctx_base = request.state.contexto_base
         ctx = Contexto(
             sujeto=ctx_base.sujeto,
             recurso=None,
-            accion=permiso_rbac,
+            accion=accion_abac,
             entorno=ctx_base.entorno,
         )
 
-        # --- RBAC ---
         if not tiene_permiso(db, ctx.sujeto.rol, permiso_rbac):
             registrar(db, ctx, recurso_nombre, "DENEGADO", etapa="RBAC", motivo="El rol no tiene este permiso")
             raise HTTPException(status.HTTP_403_FORBIDDEN, "No tienes permiso para esta operación")
 
-        request.state.ctx_autorizar = ctx  # el router completa ctx.recurso y llama a verificar_abac()
+        request.state.ctx_autorizar = ctx
         return usuario
 
     return dependencia

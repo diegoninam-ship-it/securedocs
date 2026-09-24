@@ -62,3 +62,13 @@ def construir_entorno(request) -> Entorno:
         dispositivo=dispositivo,
         ip=request.headers.get("x-real-ip") or request.client.host,
     )
+
+def recurso_desde_documento(doc) -> Recurso:
+    return Recurso(
+        id=doc.id,
+        departamento=doc.departamento.codigo,
+        nivel_confidencialidad=doc.nivel_confidencialidad,
+        estado=doc.estado,
+        pais=doc.pais,
+        propietario_id=doc.propietario_id,
+    )
