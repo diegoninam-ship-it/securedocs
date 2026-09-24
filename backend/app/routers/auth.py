@@ -6,8 +6,8 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import crear_token, verificar_password
 from app.authz.context import Contexto, Entorno, Sujeto, construir_entorno
 from app.db import get_db
-from app.models import Usuario
-from app.schemas.auth import LoginRequest, LoginResponse, UsuarioMe
+from app.models import Permiso, RolPermiso, Usuario
+from app.schemas.auth import LoginRequest, LoginResponse, PermisosOut, UsuarioMe
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -60,3 +60,14 @@ def me(usuario: Usuario = Depends(get_current_user)):
         departamento=usuario.departamento.codigo if usuario.departamento else None,
         nivel_seguridad=usuario.nivel_seguridad, pais=usuario.pais,
     )
+
+
+@router.get("/me/permisos", response_model=PermisosOut)
+def me_permisos(usuario: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    codigos = (
+        db.query(Permiso.codigo)
+        .join(RolPermiso, RolPermiso.permiso_id == Permiso.id)
+        .filter(RolPermiso.rol_id == usuario.rol_id)
+        .all()
+    )
+    return PermisosOut(permisos=[c[0] for c in codigos])

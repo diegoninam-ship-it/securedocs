@@ -22,3 +22,7 @@ class UsuarioMe(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PermisosOut(BaseModel):
+    permisos: list[str]

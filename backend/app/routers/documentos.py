@@ -196,4 +196,4 @@ def listar_documentos(
                + (f"; filtrados por: {','.join(sorted(politicas_vistas))}" if politicas_vistas else ""),
     )
 
-    return documento_a_out(doc)
+    return [documento_a_out(d) for d in visibles]
