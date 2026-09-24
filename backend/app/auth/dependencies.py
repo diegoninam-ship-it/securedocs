@@ -34,6 +34,7 @@ def get_current_user(
     # P7 evaluada aquí: en cada petición, no solo al login (D3)
     sujeto = Sujeto(
         id=usuario.id,
+        correo=usuario.correo,
         rol=usuario.rol.codigo,
         departamento=usuario.departamento.codigo if usuario.departamento else None,
         nivel_seguridad=usuario.nivel_seguridad,

@@ -7,7 +7,8 @@ from app.config import settings
 
 @dataclass
 class Sujeto:
-    id: int
+    id: int | None
+    correo: str
     rol: str
     departamento: str | None
     nivel_seguridad: int

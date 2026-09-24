@@ -6,6 +6,8 @@ from app.authz.abac.registry import REGISTRO
 from app.authz.context import Contexto
 from app.models import Politica
 
+from app.authz.abac import policies  # noqa: F401 — el import ejecuta los decoradores @politica
+
 
 @dataclass
 class ResultadoABAC:
