@@ -16,3 +16,7 @@ frontend/.env
 # Editor / SO
 .vscode/
 .DS_Store
+
+# Trazabilidad interna del agente (no exponer)
+.claude/
+CONTEXT.md
