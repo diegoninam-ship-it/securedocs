@@ -13,6 +13,20 @@ from app.authz.context import Contexto
 
 router = APIRouter(prefix="/documentos", tags=["documentos"])
 
+def documento_a_out(doc: Documento) -> DocumentoOut:
+    return DocumentoOut(
+        id=doc.id,
+        titulo=doc.titulo,
+        descripcion=doc.descripcion,
+        departamento=doc.departamento.codigo,
+        nivel_confidencialidad=doc.nivel_confidencialidad,
+        estado=doc.estado,
+        pais=doc.pais,
+        propietario_id=doc.propietario_id,
+        fecha_creacion=doc.fecha_creacion,
+        aprobado_por=doc.aprobado_por,
+        fecha_aprobacion=doc.fecha_aprobacion,
+    )
 
 @router.get("/{documento_id}", response_model=DocumentoOut)
 def obtener_documento(
@@ -27,7 +41,7 @@ def obtener_documento(
 
     verificar_abac(request, db, recurso_desde_documento(doc), recurso_nombre=f"documento-{documento_id}")
 
-    return doc
+    return documento_a_out(doc)
 
 @router.post("", response_model=DocumentoOut, status_code=status.HTTP_201_CREATED)
 def crear_documento(
@@ -60,7 +74,7 @@ def crear_documento(
     db.add(doc)
     db.commit()
     db.refresh(doc)
-    return doc
+    return documento_a_out(doc)
 
 @router.put("/{documento_id}", response_model=DocumentoOut)
 def modificar_documento(
@@ -106,7 +120,7 @@ def modificar_documento(
 
     db.commit()
     db.refresh(doc)
-    return doc
+    return documento_a_out(doc)
 
 @router.delete("/{documento_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_documento(
@@ -148,7 +162,7 @@ def aprobar_documento(
     doc.fecha_aprobacion = func.now()
     db.commit()
     db.refresh(doc)
-    return doc
+    return documento_a_out(doc)
 
 @router.get("", response_model=list[DocumentoOut])
 def listar_documentos(
@@ -182,4 +196,4 @@ def listar_documentos(
                + (f"; filtrados por: {','.join(sorted(politicas_vistas))}" if politicas_vistas else ""),
     )
 
-    return visibles
+    return documento_a_out(doc)

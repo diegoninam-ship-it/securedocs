@@ -10,6 +10,19 @@ from app.schemas.usuario import UsuarioCreate, UsuarioOut, UsuarioRolUpdate, Usu
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
+def usuario_a_out(u: Usuario) -> UsuarioOut:
+    return UsuarioOut(
+        id=u.id,
+        nombre=u.nombre,
+        correo=u.correo,
+        rol=u.rol.codigo,
+        departamento=u.departamento.codigo if u.departamento else None,
+        nivel_seguridad=u.nivel_seguridad,
+        pais=u.pais,
+        tipo_contrato=u.tipo_contrato,
+        estado=u.estado,
+    )
+
 
 @router.get("", response_model=list[UsuarioOut])
 def listar_usuarios(
@@ -19,7 +32,7 @@ def listar_usuarios(
 ):
     ctx = request.state.ctx_autorizar
     registrar(db, ctx, "usuarios (listado)", "PERMITIDO", etapa="RBAC")
-    return db.query(Usuario).all()
+    return [usuario_a_out(u) for u in db.query(Usuario).all()]
 
 
 @router.post("", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
@@ -60,7 +73,7 @@ def crear_usuario(
 
     db.commit()
     db.refresh(nuevo)
-    return nuevo
+    return usuario_a_out(nuevo)
 
 
 @router.put("/{usuario_id}", response_model=UsuarioOut)
@@ -96,7 +109,7 @@ def modificar_usuario(
 
     db.commit()
     db.refresh(objetivo)
-    return objetivo
+    return usuario_a_out(objetivo)
 
 
 @router.put("/{usuario_id}/rol", response_model=UsuarioOut)
@@ -122,4 +135,4 @@ def asignar_rol(
 
     db.commit()
     db.refresh(objetivo)
-    return objetivo
+    return usuario_a_out(objetivo)
